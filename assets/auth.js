@@ -1,6 +1,6 @@
 // auth.js - Xử lý đăng nhập và đăng ký tài khoản
 import { auth, db, onAuthStateChanged } from "./firebase.js";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendEmailVerification } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { waitForAuth } from "./utils.js";
 
@@ -35,14 +35,18 @@ document.getElementById("registerBtn")?.addEventListener("click", async () => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
+        // Gửi email xác thực
+        await sendEmailVerification(user);
+        
         await setDoc(doc(db, "users", user.uid), {
             name,
             email,
             role: "pending", // Cần admin duyệt
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            emailVerified: false
         });
 
-        alert("Đăng ký thành công, vui lòng chờ duyệt!");
+        alert("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản trước khi đăng nhập.");
         
         // Đăng xuất ngay lập tức sau khi đăng ký để tránh tự động đăng nhập
         await signOut(auth);
@@ -73,7 +77,23 @@ document.getElementById("loginBtn")?.addEventListener("click", async () => {
         const user = userCredential.user;
         const userDoc = await getDoc(doc(db, "users", user.uid));
 
+        // Kiểm tra xác thực email
+        if (!user.emailVerified) {
+            alert("Vui lòng xác thực email của bạn trước khi đăng nhập.");
+            // Gửi lại email xác thực nếu người dùng cần
+            await sendEmailVerification(user);
+            await signOut(auth);
+            return;
+        }
+
+        // Kiểm tra vai trò người dùng
         if (userDoc.exists() && userDoc.data().role !== "pending") {
+            // Cập nhật trạng thái xác thực email trong Firestore
+            if (user.emailVerified && (!userDoc.data().emailVerified || userDoc.data().emailVerified === false)) {
+                await setDoc(doc(db, "users", user.uid), { 
+                    emailVerified: true 
+                }, { merge: true });
+            }
             window.location.href = "dashboard.html";
         } else {
             alert("Tài khoản chưa được duyệt bởi admin!");

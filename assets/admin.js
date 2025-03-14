@@ -355,8 +355,9 @@ async function deleteUser(userId) {
     if (!confirm("Bạn có chắc muốn xóa tài khoản này?")) return;
     
     try {
+        
         await deleteDoc(doc(db, "users", userId));
-        alert("Tài khoản đã bị xóa!");
+        alert("Tài khoản đã bị xóa khỏi cơ sở dữ liệu!");
         
         // Tải lại tất cả dữ liệu
         loadUserStats();
