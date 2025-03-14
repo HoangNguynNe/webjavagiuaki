@@ -5,7 +5,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 import { 
     setupMenuToggle, checkAdminRole, waitForAuth, getUserClasses,
-    getUserRole, showLoading, showError, showEmpty, getClassName
+    getUserRole, showLoading, showError, showEmpty, getClassName, isClassMember
 } from "./utils.js";
 
 // Khởi tạo chức năng menu
@@ -164,6 +164,12 @@ async function savePostChanges() {
     }
     
     try {
+        const user = auth.currentUser;
+        if (!user) {
+            alert("Bạn cần đăng nhập để cập nhật bài đăng!");
+            return;
+        }
+
         // Lấy thông tin bài đăng hiện tại để kiểm tra quyền
         const postDoc = await getDoc(doc(db, "posts", postId));
         if (!postDoc.exists()) {
@@ -174,16 +180,22 @@ async function savePostChanges() {
         const postData = postDoc.data();
         const classId = postData.classId;
         
-        // Nếu bài đăng thuộc về một lớp, kiểm tra quyền
+        // Lấy vai trò người dùng
+        const userRole = await getUserRole(user.uid);
+        const isAdmin = userRole === "admin";
+        
+        // Kiểm tra quyền chỉnh sửa
+        if (!isAdmin && postData.authorId !== user.uid) {
+            alert("Bạn không có quyền chỉnh sửa bài đăng này!");
+            return;
+        }
+        
+        // Nếu bài đăng thuộc về một lớp, kiểm tra người dùng có trong lớp học không
         if (classId) {
-            const userRole = await getUserRole();
-            if (userRole !== "admin" && postData.authorId !== auth.currentUser.uid) {
-                // Kiểm tra xem người dùng có phải là thành viên của lớp học không
-                const isMember = await isClassMember(classId);
-                if (!isMember) {
-                    alert("Bạn không phải là thành viên của lớp học này!");
-                    return;
-                }
+            const isMember = await isClassMember(classId);
+            if (!isMember && !isAdmin) {
+                alert("Bạn không phải là thành viên của lớp học này!");
+                return;
             }
         }
         
@@ -200,7 +212,7 @@ async function savePostChanges() {
         loadRecentPosts();
     } catch (error) {
         console.error("Lỗi khi cập nhật bài đăng:", error);
-        alert("Không thể cập nhật bài đăng. Vui lòng thử lại.");
+        alert("Không thể cập nhật bài đăng. Vui lòng thử lại: " + error.message);
     }
 }
 
