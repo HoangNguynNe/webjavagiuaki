@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
 
-// Cấu hình Firebase (THAY BẰNG THÔNG TIN CỦA BẠN)
+// Cấu hình Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyDXoCbgrZsvLkmwG1ODrK5QCB2fdztPGPk",
   authDomain: "qlyktx.firebaseapp.com",

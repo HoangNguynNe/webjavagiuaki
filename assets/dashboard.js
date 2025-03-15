@@ -216,7 +216,7 @@ async function savePostChanges() {
     }
 }
 
-// Xóa bài đăng - kiểm tra quyền chặt chẽ hơn
+// Xóa bài đăng 
 async function deletePost(postId) {
     try {
         const user = auth.currentUser;
